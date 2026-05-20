@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MyBoo 後台管理系統</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #1A1A2E;
+    --green-light: #4A90D9;
+    --green-pale: #E8F4FD;
+    --accent: #FFD166;
+    --accent-dark: #F4B942;
+    --bg: #F8F9FA;
+    --surface: #FFFFFF;
+    --border: #E9ECEF;
+    --text: #212529;
+    --text-secondary: #6C757D;
+    --danger: #E63946;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans TC', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* Layout */
+  .app { display: flex; min-height: 100vh; }
+  .sidebar { width: 240px; background: var(--green); position: fixed; top: 0; left: 0; height: 100vh; display: flex; flex-direction: column; z-index: 100; }
+  .main { margin-left: 240px; flex: 1; min-height: 100vh; }
+
+  /* Sidebar */
+  .sidebar-logo { padding: 28px 24px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+  .sidebar-logo h1 { font-family: 'DM Sans', sans-serif; color: white; font-size: 22px; font-weight: 600; letter-spacing: -0.5px; }
+  .sidebar-logo p { color: rgba(255,255,255,0.6); font-size: 12px; margin-top: 2px; }
+  .nav { padding: 16px 12px; flex: 1; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-radius: 8px; color: rgba(255,255,255,0.75); cursor: pointer; transition: all 0.15s; font-size: 14px; font-weight: 400; margin-bottom: 2px; }
+  .nav-item:hover { background: rgba(255,255,255,0.1); color: white; }
+  .nav-item.active { background: rgba(255,255,255,0.18); color: white; font-weight: 500; }
+  .nav-item svg { flex-shrink: 0; }
+
+  /* Header */
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+  .header-title { font-size: 18px; font-weight: 500; }
+  .header-actions { display: flex; gap: 10px; }
+
+  /* Content */
+  .content { padding: 28px 32px; }
+
+  /* Stats */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+  .stat-card { background: var(--surface); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
+  .stat-label { font-size: 12px; color: var(--text-secondary); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+  .stat-value { font-size: 28px; font-weight: 600; font-family: 'DM Sans', sans-serif; margin-top: 6px; color: var(--green); }
+  .stat-sub { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; transition: all 0.15s; font-family: 'Noto Sans TC', sans-serif; }
+  .btn-primary { background: var(--green); color: white; }
+  .btn-primary:hover { background: var(--green-light); }
+  .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--bg); }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-danger:hover { opacity: 0.85; }
+  .btn-sm { padding: 6px 12px; font-size: 13px; }
+  .btn-accent { background: var(--accent); color: white; }
+  .btn-accent:hover { background: var(--accent-dark); }
+
+  /* Table */
+  .table-wrap { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+  .table-header { padding: 18px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+  .table-header h2 { font-size: 15px; font-weight: 500; }
+  .search-bar { display: flex; align-items: center; gap: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; font-size: 14px; width: 240px; }
+  .search-bar input { border: none; background: none; outline: none; font-size: 14px; width: 100%; font-family: 'Noto Sans TC', sans-serif; }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; padding: 12px 20px; font-size: 12px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); background: var(--bg); }
+  td { padding: 14px 20px; font-size: 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #F5FAFF; }
+
+  /* Product image */
+  .product-img { width: 48px; height: 48px; border-radius: 8px; object-fit: cover; background: var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-secondary); font-size: 11px; overflow: hidden; }
+  .product-img img { width: 100%; height: 100%; object-fit: cover; }
+  .product-info { display: flex; align-items: center; gap: 12px; }
+  .product-name { font-weight: 500; }
+  .product-code { font-size: 12px; color: var(--text-secondary); font-family: 'DM Sans', sans-serif; }
+
+  /* Badge */
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+  .badge-green { background: var(--green-pale); color: var(--green); }
+  .badge-orange { background: #FFF3E0; color: #E65100; }
+  .badge-red { background: #FFEBEE; color: var(--danger); }
+  .badge-gray { background: var(--border); color: var(--text-secondary); }
+  .badge-blue { background: #E3F2FD; color: #1565C0; }
+
+  /* Modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border-radius: 16px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
+  .modal-head { padding: 24px 28px 0; display: flex; align-items: center; justify-content: space-between; }
+  .modal-head h2 { font-size: 18px; font-weight: 500; }
+  .modal-close { background: none; border: none; cursor: pointer; color: var(--text-secondary); font-size: 22px; line-height: 1; padding: 4px; }
+  .modal-body { padding: 20px 28px 28px; }
+
+  /* Form */
+  .form-group { margin-bottom: 18px; }
+  label { display: block; font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; }
+  input, select, textarea { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-family: 'Noto Sans TC', sans-serif; outline: none; transition: border 0.15s; background: var(--surface); }
+  input:focus, select:focus, textarea:focus { border-color: var(--green); }
+  textarea { resize: vertical; min-height: 80px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+
+  /* Image upload */
+  .img-upload { border: 2px dashed var(--border); border-radius: 8px; padding: 24px; text-align: center; cursor: pointer; transition: all 0.15s; }
+  .img-upload:hover { border-color: var(--green); background: #EEF6FD; }
+  .img-upload input { display: none; }
+  .img-upload p { font-size: 13px; color: var(--text-secondary); margin-top: 6px; }
+  .img-preview { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .img-preview-item { position: relative; width: 72px; height: 72px; border-radius: 8px; overflow: hidden; }
+  .img-preview-item img { width: 100%; height: 100%; object-fit: cover; }
+  .img-preview-item button { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.5); border: none; color: white; border-radius: 50%; width: 18px; height: 18px; cursor: pointer; font-size: 11px; display: flex; align-items: center; justify-content: center; }
+
+  /* Page sections */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* Status select */
+  .status-select { padding: 5px 10px; border-radius: 6px; font-size: 13px; border: 1px solid var(--border); cursor: pointer; }
+
+  /* Loading */
+  .loading { text-align: center; padding: 48px; color: var(--text-secondary); }
+
+  /* Empty state */
+  .empty { text-align: center; padding: 48px; color: var(--text-secondary); }
+  .empty svg { margin-bottom: 12px; opacity: 0.3; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--green); color: white; padding: 12px 20px; border-radius: 8px; font-size: 14px; z-index: 999; transform: translateY(80px); opacity: 0; transition: all 0.3s; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.error { background: var(--danger); }
+
+  /* Pagination */
+  .pagination { display: flex; align-items: center; gap: 8px; padding: 16px 24px; border-top: 1px solid var(--border); }
+  .pagination button { padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); cursor: pointer; font-size: 13px; }
+  .pagination button.active { background: var(--green); color: white; border-color: var(--green); }
+  .pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .pagination-info { margin-left: auto; font-size: 13px; color: var(--text-secondary); }
+
+  /* Filter row */
+  .filter-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .filter-select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: var(--surface); cursor: pointer; font-family: 'Noto Sans TC', sans-serif; }
+
+  /* Stock warning */
+  .stock-low { color: var(--danger); font-weight: 500; }
+
+  /* Confirm dialog */
+  .confirm-modal { max-width: 380px; }
+  .confirm-modal .modal-body { text-align: center; padding: 24px 28px 28px; }
+  .confirm-modal p { color: var(--text-secondary); font-size: 14px; margin-bottom: 20px; }
+
+  @media (max-width: 768px) {
+    .sidebar { width: 60px; }
+    .sidebar-logo h1, .sidebar-logo p, .nav-item span { display: none; }
+    .main { margin-left: 60px; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .content { padding: 20px 16px; }
+    .header { padding: 14px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <h1>🐾 MyBoo</h1>
+      <p>後台管理系統</p>
+    </div>
+    <nav class="nav">
+      <div class="nav-item active" onclick="showPage('dashboard')">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        <span>總覽</span>
+      </div>
+      <div class="nav-item" onclick="showPage('products')">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+        <span>商品管理</span>
+      </div>
+      <div class="nav-item" onclick="showPage('orders')">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        <span>訂單管理</span>
+      </div>
+    </nav>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- Dashboard -->
+    <div id="page-dashboard" class="page active">
+      <div class="header">
+        <div class="header-title">總覽</div>
+      </div>
+      <div class="content">
+        <div class="stats">
+          <div class="stat-card">
+            <div class="stat-label">商品總數</div>
+            <div class="stat-value" id="stat-products">—</div>
+            <div class="stat-sub">已上架商品</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">今日訂單</div>
+            <div class="stat-value" id="stat-today">—</div>
+            <div class="stat-sub">筆訂單</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">待出貨</div>
+            <div class="stat-value" id="stat-pending">—</div>
+            <div class="stat-sub">筆待處理</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">今日金額</div>
+            <div class="stat-value" id="stat-revenue">—</div>
+            <div class="stat-sub">NTD</div>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <div class="table-header">
+            <h2>最近訂單</h2>
+            <button class="btn btn-secondary btn-sm" onclick="showPage('orders')">查看全部</button>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>時間</th>
+                <th>顧客</th>
+                <th>商品</th>
+                <th>金額</th>
+                <th>狀態</th>
+              </tr>
+            </thead>
+            <tbody id="recent-orders-body">
+              <tr><td colspan="5" class="loading">載入中...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Products -->
+    <div id="page-products" class="page">
+      <div class="header">
+        <div class="header-title">商品管理</div>
+        <div class="header-actions">
+          <button class="btn btn-primary" onclick="openProductModal()">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+            新增商品
+          </button>
+        </div>
+      </div>
+      <div class="content">
+        <div class="table-wrap">
+          <div class="table-header">
+            <div class="filter-row">
+              <div class="search-bar">
+                <svg width="15" height="15" fill="none" stroke="#aaa" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                <input type="text" placeholder="搜尋商品名稱或代號..." id="product-search" oninput="filterProducts()">
+              </div>
+            </div>
+            <span id="product-count" style="font-size:13px;color:var(--text-secondary)"></span>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>商品</th>
+                <th>代號</th>
+                <th>價格</th>
+                <th>庫存</th>
+                <th>尺寸</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="products-body">
+              <tr><td colspan="6" class="loading">載入中...</td></tr>
+            </tbody>
+          </table>
+          <div class="pagination" id="product-pagination"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Orders -->
+    <div id="page-orders" class="page">
+      <div class="header">
+        <div class="header-title">訂單管理</div>
+        <div class="header-actions">
+          <button class="btn btn-secondary btn-sm" onclick="exportOrders()">匯出 CSV</button>
+          <button class="btn btn-danger btn-sm" onclick="confirmClearOrders()">清空訂單</button>
+        </div>
+      </div>
+      <div class="content">
+        <div class="table-wrap">
+          <div class="table-header">
+            <div class="filter-row">
+              <div class="search-bar">
+                <svg width="15" height="15" fill="none" stroke="#aaa" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                <input type="text" placeholder="搜尋顧客姓名或商品..." id="order-search" oninput="filterOrders()">
+              </div>
+              <select class="filter-select" id="order-status-filter" onchange="filterOrders()">
+                <option value="">全部狀態</option>
+                <option value="待處理">待處理</option>
+                <option value="已出貨">已出貨</option>
+                <option value="已完成">已完成</option>
+              </select>
+            </div>
+            <span id="order-count" style="font-size:13px;color:var(--text-secondary)"></span>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>時間</th>
+                <th>顧客</th>
+                <th>商品</th>
+                <th>尺寸</th>
+                <th>數量</th>
+                <th>金額</th>
+                <th>狀態</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="orders-body">
+              <tr><td colspan="8" class="loading">載入中...</td></tr>
+            </tbody>
+          </table>
+          <div class="pagination" id="order-pagination"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Product Modal -->
+<div class="modal-overlay" id="product-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="product-modal-title">新增商品</h2>
+      <button class="modal-close" onclick="closeProductModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="product-id">
+      <div class="form-group">
+        <label>商品圖片</label>
+        <div class="img-upload" onclick="document.getElementById('img-input').click()">
+          <input type="file" id="img-input" accept="image/*" multiple onchange="handleImageUpload(event)">
+          <svg width="32" height="32" fill="none" stroke="#aaa" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+          <p>點擊上傳圖片（可多張）</p>
+        </div>
+        <div class="img-preview" id="img-preview"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>商品代號 *</label>
+          <input type="text" id="p-code" placeholder="例：TS01" style="text-transform:uppercase">
+        </div>
+        <div class="form-group">
+          <label>商品名稱 *</label>
+          <input type="text" id="p-name" placeholder="例：基本款素色T恤">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>售價（NTD）*</label>
+          <input type="number" id="p-price" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label>庫存數量 *</label>
+          <input type="number" id="p-stock" placeholder="0">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>可選尺寸（用逗號隔開）</label>
+        <input type="text" id="p-sizes" placeholder="例：S,M,L,XL">
+      </div>
+      <div class="form-group">
+        <label>商品分類</label>
+        <input type="text" id="p-category" placeholder="例：上衣、洋裝、外套">
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="closeProductModal()">取消</button>
+        <button class="btn btn-primary" onclick="saveProduct()">儲存商品</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Modal -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal confirm-modal">
+    <div class="modal-head">
+      <h2 id="confirm-title">確認操作</h2>
+      <button class="modal-close" onclick="closeConfirm()">×</button>
+    </div>
+    <div class="modal-body">
+      <p id="confirm-msg">確定要執行此操作嗎？</p>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button class="btn btn-secondary" onclick="closeConfirm()">取消</button>
+        <button class="btn btn-danger" id="confirm-btn">確定</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, limit, where, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBl2nep1UFBk2cAV3SH6XZwS6YnFD6tVh4",
+    authDomain: "myboo-system.firebaseapp.com",
+    projectId: "myboo-system",
+    storageBucket: "myboo-system.firebasestorage.app",
+    messagingSenderId: "350944472355",
+    appId: "1:350944472355:web:049dd769dc12913f847096"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const storage = getStorage(app);
+
+  // State
+  let allProducts = [];
+  let allOrders = [];
+  let filteredProducts = [];
+  let filteredOrders = [];
+  let currentProductPage = 1;
+  let currentOrderPage = 1;
+  const PAGE_SIZE = 20;
+  let uploadedImages = [];
+  let editingProductImages = [];
+
+  // ─── NAVIGATION ───────────────────────────────────
+  window.showPage = function(page) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('page-' + page).classList.add('active');
+    document.querySelectorAll('.nav-item')[['dashboard','products','orders'].indexOf(page)].classList.add('active');
+    if (page === 'dashboard') loadDashboard();
+    if (page === 'products') loadProducts();
+    if (page === 'orders') loadOrders();
+  }
+
+  // ─── TOAST ────────────────────────────────────────
+  window.showToast = function(msg, type = '') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (type === 'error' ? ' error' : '');
+    setTimeout(() => t.className = 'toast', 2800);
+  }
+
+  // ─── DASHBOARD ────────────────────────────────────
+  async function loadDashboard() {
+    try {
+      const [prodSnap, orderSnap] = await Promise.all([
+        getDocs(collection(db, 'products')),
+        getDocs(query(collection(db, 'orders'), orderBy('createdAt', 'desc')))
+      ]);
+
+      const products = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const orders = orderSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      const today = new Date().toDateString();
+      const todayOrders = orders.filter(o => {
+        const d = o.createdAt?.toDate ? o.createdAt.toDate() : new Date(o.createdAt);
+        return d.toDateString() === today;
+      });
+
+      document.getElementById('stat-products').textContent = products.length;
+      document.getElementById('stat-today').textContent = todayOrders.length;
+      document.getElementById('stat-pending').textContent = orders.filter(o => o.status === '待處理').length;
+      document.getElementById('stat-revenue').textContent = '$' + todayOrders.reduce((s, o) => s + (Number(o.amount) || 0), 0).toLocaleString();
+
+      const tbody = document.getElementById('recent-orders-body');
+      const recent = orders.slice(0, 10);
+      if (!recent.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty">尚無訂單</td></tr>';
+        return;
+      }
+      tbody.innerHTML = recent.map(o => `
+        <tr>
+          <td style="font-size:13px;color:var(--text-secondary)">${formatTime(o.createdAt)}</td>
+          <td><strong>${o.customerName || '—'}</strong></td>
+          <td>${o.productName || '—'}</td>
+          <td><strong>$${Number(o.amount).toLocaleString()}</strong></td>
+          <td>${statusBadge(o.status || '待處理')}</td>
+        </tr>
+      `).join('');
+    } catch(e) {
+      console.error(e);
+    }
+  }
+
+  // ─── PRODUCTS ────────────────────────────────────
+  async function loadProducts() {
+    try {
+      const snap = await getDocs(query(collection(db, 'products'), orderBy('code')));
+      allProducts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      filteredProducts = [...allProducts];
+      currentProductPage = 1;
+      renderProducts();
+    } catch(e) {
+      document.getElementById('products-body').innerHTML = '<tr><td colspan="6" class="empty">載入失敗，請重試</td></tr>';
+    }
+  }
+
+  window.filterProducts = function() {
+    const q = document.getElementById('product-search').value.toLowerCase();
+    filteredProducts = allProducts.filter(p =>
+      p.name?.toLowerCase().includes(q) || p.code?.toLowerCase().includes(q)
+    );
+    currentProductPage = 1;
+    renderProducts();
+  }
+
+  function renderProducts() {
+    const start = (currentProductPage - 1) * PAGE_SIZE;
+    const page = filteredProducts.slice(start, start + PAGE_SIZE);
+    document.getElementById('product-count').textContent = `共 ${filteredProducts.length} 件商品`;
+
+    if (!page.length) {
+      document.getElementById('products-body').innerHTML = '<tr><td colspan="6" class="empty">沒有商品</td></tr>';
+      document.getElementById('product-pagination').innerHTML = '';
+      return;
+    }
+
+    document.getElementById('products-body').innerHTML = page.map(p => `
+      <tr>
+        <td>
+          <div class="product-info">
+            <div class="product-img">
+              ${p.images?.[0] ? `<img src="${p.images[0]}" alt="">` : '📷'}
+            </div>
+            <div>
+              <div class="product-name">${p.name}</div>
+              ${p.category ? `<div class="product-code">${p.category}</div>` : ''}
+            </div>
+          </div>
+        </td>
+        <td><span style="font-family:'DM Sans',sans-serif;font-weight:500;color:var(--green)">${p.code}</span></td>
+        <td><strong>$${Number(p.price).toLocaleString()}</strong></td>
+        <td><span class="${p.stock <= 0 ? 'stock-low' : p.stock <= 3 ? 'badge badge-orange' : 'badge badge-green'}">${p.stock <= 0 ? '已售完' : p.stock}</span></td>
+        <td style="font-size:13px;color:var(--text-secondary)">${p.sizes || '—'}</td>
+        <td>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-secondary btn-sm" onclick="editProduct('${p.id}')">編輯</button>
+            <button class="btn btn-danger btn-sm" onclick="confirmDeleteProduct('${p.id}', '${p.name}')">刪除</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+
+    renderPagination('product-pagination', filteredProducts.length, currentProductPage, (p) => {
+      currentProductPage = p;
+      renderProducts();
+    });
+  }
+
+  // ─── PRODUCT MODAL ───────────────────────────────
+  window.openProductModal = function() {
+    document.getElementById('product-modal-title').textContent = '新增商品';
+    document.getElementById('product-id').value = '';
+    document.getElementById('p-code').value = '';
+    document.getElementById('p-name').value = '';
+    document.getElementById('p-price').value = '';
+    document.getElementById('p-stock').value = '';
+    document.getElementById('p-sizes').value = '';
+    document.getElementById('p-category').value = '';
+    document.getElementById('img-preview').innerHTML = '';
+    uploadedImages = [];
+    editingProductImages = [];
+    document.getElementById('product-modal').classList.add('open');
+  }
+
+  window.closeProductModal = function() {
+    document.getElementById('product-modal').classList.remove('open');
+  }
+
+  window.editProduct = function(id) {
+    const p = allProducts.find(x => x.id === id);
+    if (!p) return;
+    document.getElementById('product-modal-title').textContent = '編輯商品';
+    document.getElementById('product-id').value = id;
+    document.getElementById('p-code').value = p.code || '';
+    document.getElementById('p-name').value = p.name || '';
+    document.getElementById('p-price').value = p.price || '';
+    document.getElementById('p-stock').value = p.stock || '';
+    document.getElementById('p-sizes').value = p.sizes || '';
+    document.getElementById('p-category').value = p.category || '';
+    uploadedImages = [];
+    editingProductImages = p.images ? [...p.images] : [];
+    renderImagePreview();
+    document.getElementById('product-modal').classList.add('open');
+  }
+
+  window.handleImageUpload = function(event) {
+    const files = Array.from(event.target.files);
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        uploadedImages.push({ file, preview: e.target.result });
+        renderImagePreview();
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function renderImagePreview() {
+    const preview = document.getElementById('img-preview');
+    const existingHTML = editingProductImages.map((url, i) => `
+      <div class="img-preview-item">
+        <img src="${url}">
+        <button onclick="removeExistingImage(${i})">×</button>
+      </div>
+    `).join('');
+    const newHTML = uploadedImages.map((img, i) => `
+      <div class="img-preview-item">
+        <img src="${img.preview}">
+        <button onclick="removeNewImage(${i})">×</button>
+      </div>
+    `).join('');
+    preview.innerHTML = existingHTML + newHTML;
+  }
+
+  window.removeExistingImage = function(i) {
+    editingProductImages.splice(i, 1);
+    renderImagePreview();
+  }
+  window.removeNewImage = function(i) {
+    uploadedImages.splice(i, 1);
+    renderImagePreview();
+  }
+
+  window.saveProduct = async function() {
+    const code = document.getElementById('p-code').value.trim().toUpperCase();
+    const name = document.getElementById('p-name').value.trim();
+    const price = Number(document.getElementById('p-price').value);
+    const stock = Number(document.getElementById('p-stock').value);
+    const sizes = document.getElementById('p-sizes').value.trim();
+    const category = document.getElementById('p-category').value.trim();
+    const id = document.getElementById('product-id').value;
+
+    if (!code || !name || !price) { showToast('請填寫代號、名稱和價格', 'error'); return; }
+
+    try {
+      // Upload new images
+      const newImageURLs = await Promise.all(uploadedImages.map(async (img) => {
+        const storageRef = ref(storage, `products/${code}_${Date.now()}_${img.file.name}`);
+        await uploadBytes(storageRef, img.file);
+        return await getDownloadURL(storageRef);
+      }));
+
+      const images = [...editingProductImages, ...newImageURLs];
+      const data = { code, name, price, stock, sizes, category, images, updatedAt: Timestamp.now() };
+
+      if (id) {
+        await updateDoc(doc(db, 'products', id), data);
+        showToast('商品已更新');
+      } else {
+        data.createdAt = Timestamp.now();
+        await addDoc(collection(db, 'products'), data);
+        showToast('商品已新增');
+      }
+
+      closeProductModal();
+      loadProducts();
+    } catch(e) {
+      console.error(e);
+      showToast('儲存失敗：' + e.message, 'error');
+    }
+  }
+
+  window.confirmDeleteProduct = function(id, name) {
+    showConfirm(`確定要刪除「${name}」嗎？此操作無法復原。`, async () => {
+      try {
+        await deleteDoc(doc(db, 'products', id));
+        showToast('商品已刪除');
+        loadProducts();
+      } catch(e) {
+        showToast('刪除失敗', 'error');
+      }
+    });
+  }
+
+  // ─── ORDERS ──────────────────────────────────────
+  async function loadOrders() {
+    try {
+      const snap = await getDocs(query(collection(db, 'orders'), orderBy('createdAt', 'desc')));
+      allOrders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      filteredOrders = [...allOrders];
+      currentOrderPage = 1;
+      renderOrders();
+    } catch(e) {
+      document.getElementById('orders-body').innerHTML = '<tr><td colspan="8" class="empty">載入失敗</td></tr>';
+    }
+  }
+
+  window.filterOrders = function() {
+    const q = document.getElementById('order-search').value.toLowerCase();
+    const status = document.getElementById('order-status-filter').value;
+    filteredOrders = allOrders.filter(o => {
+      const matchQ = !q || o.customerName?.toLowerCase().includes(q) || o.productName?.toLowerCase().includes(q) || o.productCode?.toLowerCase().includes(q);
+      const matchStatus = !status || o.status === status;
+      return matchQ && matchStatus;
+    });
+    currentOrderPage = 1;
+    renderOrders();
+  }
+
+  function renderOrders() {
+    const start = (currentOrderPage - 1) * PAGE_SIZE;
+    const page = filteredOrders.slice(start, start + PAGE_SIZE);
+    document.getElementById('order-count').textContent = `共 ${filteredOrders.length} 筆訂單`;
+
+    if (!page.length) {
+      document.getElementById('orders-body').innerHTML = '<tr><td colspan="8" class="empty">沒有訂單</td></tr>';
+      document.getElementById('order-pagination').innerHTML = '';
+      return;
+    }
+
+    document.getElementById('orders-body').innerHTML = page.map(o => `
+      <tr>
+        <td style="font-size:13px;color:var(--text-secondary);white-space:nowrap">${formatTime(o.createdAt)}</td>
+        <td><strong>${o.customerName || '—'}</strong></td>
+        <td>
+          <div style="font-weight:500">${o.productName || '—'}</div>
+          <div style="font-size:12px;color:var(--text-secondary);font-family:'DM Sans'">${o.productCode || ''}</div>
+        </td>
+        <td>${o.size || '—'}</td>
+        <td>${o.quantity || 1}</td>
+        <td><strong>$${Number(o.amount).toLocaleString()}</strong></td>
+        <td>
+          <select class="status-select" onchange="updateOrderStatus('${o.id}', this.value, '${o.lineUserId || ''}', '${o.customerName || ''}', '${o.productName || ''}')">
+            <option ${o.status === '待處理' ? 'selected' : ''}>待處理</option>
+            <option ${o.status === '已出貨' ? 'selected' : ''}>已出貨</option>
+            <option ${o.status === '已完成' ? 'selected' : ''}>已完成</option>
+          </select>
+        </td>
+        <td>
+          <button class="btn btn-danger btn-sm" onclick="confirmDeleteOrder('${o.id}')">刪除</button>
+        </td>
+      </tr>
+    `).join('');
+
+    renderPagination('order-pagination', filteredOrders.length, currentOrderPage, (p) => {
+      currentOrderPage = p;
+      renderOrders();
+    });
+  }
+
+  window.updateOrderStatus = async function(id, status, lineUserId, customerName, productName) {
+    try {
+      await updateDoc(doc(db, 'orders', id), { status, updatedAt: Timestamp.now() });
+
+      // 已出貨時發 Line 通知
+      if (status === '已出貨' && lineUserId) {
+        await sendShippingNotification(lineUserId, customerName, productName);
+      }
+
+      showToast('訂單狀態已更新');
+      const order = allOrders.find(o => o.id === id);
+      if (order) order.status = status;
+      filterOrders();
+    } catch(e) {
+      showToast('更新失敗', 'error');
+    }
+  }
+
+  async function sendShippingNotification(lineUserId, customerName, productName) {
+    const LINE_TOKEN = 'YOUR_LINE_TOKEN'; // 換成客戶的 Token
+    const message = `🚚 出貨通知\n\n${customerName} 您好！\n您訂購的「${productName}」已出貨，請注意查收。\n\n感謝您的購買！🐾`;
+    try {
+      await fetch('https://api.line.me/v2/bot/message/push', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${LINE_TOKEN}`
+        },
+        body: JSON.stringify({
+          to: lineUserId,
+          messages: [{ type: 'text', text: message }]
+        })
+      });
+    } catch(e) {
+      console.error('Line 通知失敗', e);
+    }
+  }
+
+  window.confirmDeleteOrder = function(id) {
+    showConfirm('確定要刪除這筆訂單嗎？', async () => {
+      try {
+        await deleteDoc(doc(db, 'orders', id));
+        showToast('訂單已刪除');
+        loadOrders();
+      } catch(e) {
+        showToast('刪除失敗', 'error');
+      }
+    });
+  }
+
+  window.confirmClearOrders = function() {
+    showConfirm('確定要清空所有訂單嗎？此操作無法復原！', async () => {
+      try {
+        const snap = await getDocs(collection(db, 'orders'));
+        await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
+        showToast('所有訂單已清空');
+        loadOrders();
+      } catch(e) {
+        showToast('清空失敗', 'error');
+      }
+    });
+  }
+
+  window.exportOrders = function() {
+    if (!allOrders.length) { showToast('沒有訂單可匯出', 'error'); return; }
+    const headers = ['時間', '顧客', '商品代號', '商品名稱', '尺寸', '數量', '金額', '狀態'];
+    const rows = allOrders.map(o => [
+      formatTime(o.createdAt), o.customerName, o.productCode, o.productName,
+      o.size, o.quantity, o.amount, o.status || '待處理'
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(v => `"${v || ''}"`).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `myboo_orders_${new Date().toLocaleDateString('zh-TW')}.csv`;
+    a.click();
+    showToast('訂單已匯出');
+  }
+
+  // ─── HELPERS ─────────────────────────────────────
+  function formatTime(ts) {
+    if (!ts) return '—';
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    return d.toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+  }
+
+  function statusBadge(status) {
+    const map = { '待處理': 'badge-orange', '已出貨': 'badge-blue', '已完成': 'badge-green' };
+    return `<span class="badge ${map[status] || 'badge-gray'}">${status}</span>`;
+  }
+
+  function renderPagination(containerId, total, current, onChange) {
+    const totalPages = Math.ceil(total / PAGE_SIZE);
+    if (totalPages <= 1) { document.getElementById(containerId).innerHTML = ''; return; }
+    let html = `<button ${current === 1 ? 'disabled' : ''} onclick="(${onChange})(${current - 1})">‹</button>`;
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || Math.abs(i - current) <= 1) {
+        html += `<button class="${i === current ? 'active' : ''}" onclick="(${onChange})(${i})">${i}</button>`;
+      } else if (Math.abs(i - current) === 2) {
+        html += `<span style="padding:6px 4px;color:var(--text-secondary)">…</span>`;
+      }
+    }
+    html += `<button ${current === totalPages ? 'disabled' : ''} onclick="(${onChange})(${current + 1})">›</button>`;
+    html += `<span class="pagination-info">第 ${current} / ${totalPages} 頁</span>`;
+    document.getElementById(containerId).innerHTML = html;
+  }
+
+  // ─── CONFIRM ─────────────────────────────────────
+  let confirmCallback = null;
+  window.showConfirm = function(msg, cb) {
+    document.getElementById('confirm-msg').textContent = msg;
+    confirmCallback = cb;
+    document.getElementById('confirm-modal').classList.add('open');
+    document.getElementById('confirm-btn').onclick = () => { closeConfirm(); cb(); };
+  }
+  window.closeConfirm = function() {
+    document.getElementById('confirm-modal').classList.remove('open');
+  }
+
+  // Init
+  loadDashboard();
+</script>
+</body>
+</html>
