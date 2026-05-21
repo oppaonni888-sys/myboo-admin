@@ -142,7 +142,7 @@
   .empty svg { margin-bottom: 12px; opacity: 0.3; }
 
   /* Toast */
-  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--green); color: white; padding: 12px 20px; border-radius: 8px; font-size: 14px; z-index: 999; transform: translateY(80px); opacity: 0; transition: all 0.3s; }
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--green); color: white; padding: 14px 28px; border-radius: 12px; font-size: 16px; font-weight: 500; z-index: 999; opacity: 0; transition: all 0.3s; white-space: nowrap; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
   .toast.show { transform: translateY(0); opacity: 1; }
   .toast.error { background: var(--danger); }
 
@@ -483,7 +483,8 @@
     const t = document.getElementById('toast');
     t.textContent = msg;
     t.className = 'toast show' + (type === 'error' ? ' error' : '');
-    setTimeout(() => t.className = 'toast', 2800);
+    t.style.transform = 'translateX(-50%) translateY(0)';
+    setTimeout(() => { t.className = 'toast'; t.style.transform = 'translateX(-50%) translateY(80px)'; }, 3500);
   }
 
   // ─── DASHBOARD ────────────────────────────────────
@@ -669,6 +670,10 @@
   }
 
   window.saveProduct = async function() {
+    const btn = document.getElementById('save-btn');
+    btn.disabled = true;
+    btn.textContent = '上傳中...';
+
     const code = document.getElementById('p-code').value.trim().toUpperCase();
     const name = document.getElementById('p-name').value.trim();
     const price = Number(document.getElementById('p-price').value);
@@ -702,17 +707,21 @@
 
       if (id) {
         await updateDoc(doc(db, 'products', id), data);
-        showToast('商品已更新');
+        showToast('✅ 商品已更新！');
       } else {
         data.createdAt = Timestamp.now();
         await addDoc(collection(db, 'products'), data);
-        showToast('商品已新增');
+        showToast('✅ 商品已新增！');
       }
 
+      btn.disabled = false;
+      btn.textContent = '儲存商品';
       closeProductModal();
       loadProducts();
     } catch(e) {
       console.error(e);
+      btn.disabled = false;
+      btn.textContent = '儲存商品';
       showToast('儲存失敗：' + e.message, 'error');
     }
   }
