@@ -430,6 +430,14 @@
 <div class="toast" id="toast"></div>
 
 <!-- Firebase -->
+<script>
+  const CLOUDINARY_CLOUD = "dnch0bbqj";
+  const CLOUDINARY_PRESET = "myboo_upload";
+</script>
+<script>
+  window.CLOUDINARY_CLOUD = "dnch0bbqj";
+  window.CLOUDINARY_PRESET = "myboo_upload";
+</script>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, limit, where, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -676,8 +684,8 @@
       const newImageURLs = await Promise.all(uploadedImages.map(async (img) => {
         const formData = new FormData();
         formData.append('file', img.file);
-        formData.append('upload_preset', CLOUDINARY_PRESET);
-        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, {
+        formData.append('upload_preset', window.CLOUDINARY_PRESET);
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${window.CLOUDINARY_CLOUD}/image/upload`, {
           method: 'POST',
           body: formData
         });
