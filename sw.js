@@ -1,14 +1,15 @@
-const CACHE_NAME = 'myboo-admin-v1';
+const CACHE_NAME = 'myboo-admin-v2';
 const ASSETS = [
-  '/myboo-admin/',
-  '/myboo-admin/index.html',
-  '/myboo-admin/manifest.json'
+  './',
+  './index.html',
+  './manifest.json'
 ];
 
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
   );
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
@@ -17,6 +18,7 @@ self.addEventListener('activate', event => {
       Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
     )
   );
+  self.clients.claim();
 });
 
 self.addEventListener('fetch', event => {

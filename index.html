@@ -690,6 +690,10 @@
           body: formData
         });
         const data = await res.json();
+        console.log('Cloudinary response:', JSON.stringify(data));
+        if (!data.secure_url) {
+          throw new Error('圖片上傳失敗：' + (data.error?.message || JSON.stringify(data)));
+        }
         return data.secure_url;
       }));
 
@@ -916,7 +920,7 @@
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/myboo-admin/sw.js')
+    navigator.serviceWorker.register('./sw.js')
       .then(reg => console.log('SW registered'))
       .catch(err => console.log('SW error', err));
   });
